@@ -108,7 +108,143 @@ def actualtotalload_list(request):
         return JsonResponse(data_to_export,json_dumps_params={'indent': 2},safe = False)
 
 
-def actualtotalload_detail2(request,areaname,resolutioncode,year,month,day):
+def actual(request,areaname,resolutioncode,date,info):
+    if date == 'date':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        tmp = info[8:10]
+        day = int(tmp)
+        if len(info) > 10 :
+            format = info[18:]
+        else:
+            format = 'json'
+        return actualtotalload_detail2(request,areaname,resolutioncode,year,month,day,format)
+    elif date == 'month':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        if len(info) > 9:
+            format = info[15:]
+        else:
+            format = 'json'
+        return actualtotalload_detail1(request,areaname,resolutioncode,year,month,format)
+    elif date == 'year':
+        tmp = info[0:4]
+        year = int(tmp)
+        if len(info) > 6:
+            format = info[12:]
+        else:
+            format = 'json'
+        return actualtotalload_detail(request,areaname,resolutioncode,year,format)
+    else:
+        return HttpResponse("Bad request")
+
+def aggre(request,areaname,productiontype,resolutioncode,date,info):
+    if date == 'date':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        tmp = info[8:10]
+        day = int(tmp)
+        if len(info) > 10 :
+            format = info[18:]
+        else:
+            format = 'json'
+        return aggregatedgenerationpertype_detail2(request,areaname,productiontype,resolutioncode,year,month,day,format)
+    elif date == 'month':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        if len(info) > 9:
+            format = info[15:]
+        else:
+            format = 'json'
+        return aggregatedgenerationpertype_detail1(request,areaname,productiontype,resolutioncode,year,month,format)
+    elif date == 'year':
+        tmp = info[0:4]
+        year = int(tmp)
+        if len(info) > 6:
+            format = info[12:]
+        else:
+            format = 'json'
+        return aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutioncode,year,format)
+    else:
+        return HttpResponse("Bad request")
+
+def dayahead(request,areaname,resolutioncode,date,info):
+    if date == 'date':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        tmp = info[8:10]
+        day = int(tmp)
+        if len(info) > 10 :
+            format = info[18:]
+        else:
+            format = 'json'
+        return dayaheadtotalloadforecast_detail2(request,areaname,resolutioncode,year,month,day,format)
+    elif date == 'month':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        if len(info) > 9:
+            format = info[15:]
+        else:
+            format = 'json'
+        return dayaheadtotalloadforecast_detail1(request,areaname,resolutioncode,year,month,format)
+    elif date == 'year':
+        tmp = info[0:4]
+        year = int(tmp)
+        if len(info) > 6:
+            format = info[12:]
+        else:
+            format = 'json'
+        return dayaheadtotalloadforecast_detail(request,areaname,resolutioncode,year,format)
+    else:
+        return HttpResponse("Bad request")
+
+def actualvs(request,areaname,resolutioncode,date,info):
+    if date == 'date':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        tmp = info[8:10]
+        day = int(tmp)
+        if len(info) > 10 :
+            format = info[18:]
+        else:
+            format = 'json'
+        return actualvsforecast_detail2(request,areaname,resolutioncode,year,month,day,format)
+    elif date == 'month':
+        tmp = info[0:4]
+        year = int(tmp)
+        tmp = info[5:7]
+        month = int(tmp)
+        if len(info) > 9:
+            format = info[15:]
+        else:
+            format = 'json'
+        return actualvsforecast_detail1(request,areaname,resolutioncode,year,month,format)
+    elif date == 'year':
+        tmp = info[0:4]
+        year = int(tmp)
+        if len(info) > 6:
+            format = info[12:]
+        else:
+            format = 'json'
+        return actualvsforecast_detail(request,areaname,resolutioncode,year,format)
+    else:
+        return HttpResponse("Bad request")
+
+def actualtotalload_detail2(request,areaname,resolutioncode,year,month,day,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id
     data_to_export = Actualtotalload.objects.filter(areaname = areaname,resolutioncodeid = resolutioncodeid,year=year,month=month,day=day)
@@ -134,9 +270,24 @@ def actualtotalload_detail2(request,areaname,resolutioncode,year,month,day):
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if  format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "ActualTotalLoad.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")
 
-def actualtotalload_detail1(request,areaname,resolutioncode,year,month):
+def actualtotalload_detail1(request,areaname,resolutioncode,year,month,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id
     data_to_export = Actualtotalload.objects.filter(areaname = areaname,resolutioncodeid = resolutioncodeid,year=year,month=month)
@@ -163,9 +314,24 @@ def actualtotalload_detail1(request,areaname,resolutioncode,year,month):
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format =='json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "ActualTotalLoad.csv"'
+                return response
+        else:
+            return HttpResponse("Bad rerquest")
 
-def actualtotalload_detail(request,areaname,resolutioncode,year):
+def actualtotalload_detail(request,areaname,resolutioncode,year,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id
     data_to_export = Actualtotalload.objects.filter(areaname = areaname,resolutioncodeid = resolutioncodeid,year=year)
@@ -191,7 +357,22 @@ def actualtotalload_detail(request,areaname,resolutioncode,year):
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format=='json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format=='csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "ActualTotalLoad.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")
 
 #Aggregatedgenerationpertype
 def aggregatedgenerationpertype_list(request):
@@ -224,7 +405,7 @@ def aggregatedgenerationpertype_list(request):
 
 
 #@csrf_exempt
-def aggregatedgenerationpertype_detail2(request,areaname,productiontype,resolutioncode,year,month,day):
+def aggregatedgenerationpertype_detail2(request,areaname,productiontype,resolutioncode,year,month,day,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     tmp2 = Productiontype.objects.filter(productiontypetext = productiontype)
     data_to_export = Aggregatedgenerationpertype.objects.filter(areaname = areaname, resolutioncodeid = tmp[0], productiontypeid = tmp2[0],year = year, month = month, day = day)
@@ -251,9 +432,24 @@ def aggregatedgenerationpertype_detail2(request,areaname,productiontype,resoluti
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format =='csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "AggreatedGenerationPerType.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")
 
-def aggregatedgenerationpertype_detail1(request,areaname,productiontype,resolutioncode,year,month):
+def aggregatedgenerationpertype_detail1(request,areaname,productiontype,resolutioncode,year,month,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     tmp2 = Productiontype.objects.filter(productiontypetext = productiontype)
     data_to_export = Aggregatedgenerationpertype.objects.filter(areaname = areaname, resolutioncodeid = tmp[0], productiontypeid = tmp2[0],year = year, month = month)
@@ -281,9 +477,24 @@ def aggregatedgenerationpertype_detail1(request,areaname,productiontype,resoluti
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format=='json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format=='csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "AggreatedGenerationPerType.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")
 
-def aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutioncode,year):
+def aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutioncode,year,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     tmp2 = Productiontype.objects.filter(productiontypetext = productiontype)
     data_to_export = Aggregatedgenerationpertype.objects.filter(areaname = areaname, resolutioncodeid = tmp[0], productiontypeid = tmp2[0],year = year)
@@ -310,7 +521,22 @@ def aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutio
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
-        return JsonResponse(data,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(data,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "AggreatedGenerationPerType.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")
 
 #dayaheadtotalloadforecast
 
@@ -344,7 +570,7 @@ def dayaheadtotalloadforecast_list(request):
         return JsonResponse(data_to_export,json_dumps_params={'indent': 2},safe = False)
 
 #@csrf_exempt
-def dayaheadtotalloadforecast_detail2(request,areaname,resolutioncode,year,month,day):
+def dayaheadtotalloadforecast_detail2(request,areaname,resolutioncode,year,month,day,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     data_to_export = Dayaheadtotalloadforecast.objects.filter(areaname = areaname, resolutioncodeid = tmp[0],year = year, month = month, day = day)
     data = []
@@ -369,9 +595,24 @@ def dayaheadtotalloadforecast_detail2(request,areaname,resolutioncode,year,month
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "DayAheadTotalLoadForecast.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")
 
-def dayaheadtotalloadforecast_detail1(request,areaname,resolutioncode,year,month):
+def dayaheadtotalloadforecast_detail1(request,areaname,resolutioncode,year,month,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     data_to_export = Dayaheadtotalloadforecast.objects.filter(areaname = areaname, resolutioncodeid = tmp[0],year = year, month = month)
     data = []
@@ -397,9 +638,24 @@ def dayaheadtotalloadforecast_detail1(request,areaname,resolutioncode,year,month
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "Dayaheadtotalloadforecast.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")
 
-def dayaheadtotalloadforecast_detail(request,areaname,resolutioncode,year):
+def dayaheadtotalloadforecast_detail(request,areaname,resolutioncode,year,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     data_to_export = Dayaheadtotalloadforecast.objects.filter(areaname = areaname, resolutioncodeid = tmp[0],year = year, month = month, day = day)
     data = []
@@ -424,12 +680,27 @@ def dayaheadtotalloadforecast_detail(request,areaname,resolutioncode,year):
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "DayAheadTotalLoadForecast.csv"'
+                return response
+        else:
+            return HttpResponse('Bad request')
 
 
 #Actual Total Load vs Day-Ahead Total Load Forecast
 
-def actualvsforecast_detail2(request,areaname,resolutioncode,year,month,day):
+def actualvsforecast_detail2(request,areaname,resolutioncode,year,month,day,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id
     data_to_export = Actualtotalload.objects.filter(areaname = areaname,resolutioncodeid = resolutioncodeid,year=year,month=month,day=day)
@@ -457,9 +728,24 @@ def actualvsforecast_detail2(request,areaname,resolutioncode,year,month,day):
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "ActualVsForecast.csv"'
+                return response
+        else:
+            return HttpResponse('Bad rerquest')
 
-def actualvsforecast_detail1(request,areaname,resolutioncode,year,month):
+def actualvsforecast_detail1(request,areaname,resolutioncode,year,month,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id
     data_to_export = Actualtotalload.objects.filter(areaname = areaname,resolutioncodeid = resolutioncodeid,year=year,month=month)
@@ -488,9 +774,24 @@ def actualvsforecast_detail1(request,areaname,resolutioncode,year,month):
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "ActualVsForecast.csv"'
+                return response
+        else:
+            return HttpResponse("Bad reqquest")
 
-def actualvsforecast_detail(request,areaname,resolutioncode,year):
+def actualvsforecast_detail(request,areaname,resolutioncode,year,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id
     data_to_export = Actualtotalload.objects.filter(areaname = areaname,resolutioncodeid = resolutioncodeid,year=year)
@@ -518,4 +819,19 @@ def actualvsforecast_detail(request,areaname,resolutioncode,year):
         return HttpResponse("NO DATA")
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
-        return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        if format == 'json':
+            return JsonResponse(newdata,json_dumps_params={'indent': 2},safe = False)
+        elif format == 'csv':
+            csv_file = "Names.csv"
+            csv_columns = ['source','dataset','areaname','areatypecode','mapcode','resolutioncode','year','month','day','datetime','actualtotalloadvalue','updatetime']
+            with open(csv_file, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writeheader()
+                for d in newdata:
+                    writer.writerow(d)
+            with open(csv_file) as csvfile:
+                response = HttpResponse(csvfile,content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename = "ActualTotalLoad.csv"'
+                return response
+        else:
+            return HttpResponse("Bad request")

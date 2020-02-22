@@ -1,0 +1,2 @@
+source,dataset,areaname,areatypecode,mapcode,resolutioncode,year,month,day,datetime,actualtotalloadvalue,updatetime
+entso-e,ActualTotalLoad,Greece,CTY,GR,PT60M,2018,1,,,{'totalloadvalue__sum': Decimal('1308759.35')},
