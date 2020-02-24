@@ -22,11 +22,10 @@ from django.template import loader
 from django.contrib.auth.decorators import *
 from django.contrib.auth.hashers import check_password
 
-
+#Login class after submit button on webpage
 class Login(views.APIView):
 
     def post(self,request,*args,**kwargs):
-        tmp = request.data
         if not request.data:
             return HttpResponse({'Error: please provide username and password'}, status=400)
 
@@ -44,7 +43,7 @@ class Login(views.APIView):
             'firstname':user[0].firstname,
             'lastname':user[0].lastname,
             }
-            jwt_token = {"token":jwt.encode(payload , "foo")}
+            jwt_token = {"token":jwt.encode(payload , "foo")} #token for authenticaton
             #dump = json.dumps(jwt_token.decode('utf-8'))
             return HttpResponse(
                 jwt_token['token'],
@@ -58,6 +57,13 @@ class Login(views.APIView):
                 content_type="application/json"
             )
 
+#logout seesion--under construction
+class Logout(views.APIView):
+    def post(self,request,*args,**kwargs):
+        del request #deletiung token
+        return HttpResponse("",status=200)
+
+#not used
 class UploadFileForm(forms.Form):
     file = forms.FileField()
 
@@ -68,6 +74,8 @@ def usss(request,username):
     serializer = UserSerializer(user,many=True)
     return JsonResponse(serializer.data,json_dumps_params={'indent': 2},safe=False)
 
+
+#upload file not used
 def upload(request):
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
@@ -78,7 +86,7 @@ def upload(request):
         form = UploadFileForm()
     return render(request,'upload_form.html',{'form': form, 'title': 'Excel file and download', 'header' : ('Please choose any excel file '  +  'from your pc')})
 
-#add users
+
 
 #Healtcheck
 def process_request(request):
@@ -96,6 +104,7 @@ def process_request(request):
             return JsonResponse(j)
 
 #@crsf_exempt
+#returns all users
 def user_list(request):
     if request.method =='GET':
         users = User.objects.all()
@@ -111,6 +120,7 @@ def user_list(request):
         return JsonResponse(serializer.errors,status=400)
 
 #@csrf_exempt
+#return user from hiw userid
 def user_detail(request,pk):
     try:
         user = User.objects.get(pk=pk)
@@ -132,6 +142,7 @@ def user_detail(request,pk):
         user.delete()
         return HttpResponse(status=204)
 
+#returns all actualTotalLoads objects
 @login_required(login_url='/api/Login')
 def actualtotalload_list(request):
     if request.method == 'GET':
@@ -157,6 +168,7 @@ def actualtotalload_list(request):
             })
         return JsonResponse(data_to_export,json_dumps_params={'indent': 2},safe = False)
 
+#actual total load
 @login_required(login_url='home')
 def actual(request,areaname,resolutioncode,date,info):
     t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
@@ -195,6 +207,7 @@ def actual(request,areaname,resolutioncode,date,info):
     else:
         return HttpResponse(status=400)
 
+#aggregated generation per type
 @login_required(login_url='/api/Login')
 def aggre(request,areaname,productiontype,resolutioncode,date,info):
     t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
@@ -236,7 +249,7 @@ def aggre(request,areaname,productiontype,resolutioncode,date,info):
     else:
         return HttpResponse(status=400)
 
-
+#dayahead total load forecast
 @login_required(login_url='/api/Login')
 def dayahead(request,areaname,resolutioncode,date,info):
     t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
@@ -275,6 +288,7 @@ def dayahead(request,areaname,resolutioncode,date,info):
     else:
         return HttpResponse(status=400)
 
+$actual total load versu day ahead total load forecast
 @login_required(login_url='/api/Login')
 def actualvs(request,areaname,resolutioncode,date,info):
     t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
@@ -313,6 +327,7 @@ def actualvs(request,areaname,resolutioncode,date,info):
     else:
         return HttpResponse(status=400)
 
+#actualtotalload
 def actualtotalload_detail2(request,areaname,resolutioncode,year,month,day,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'api',
     'rest_framework',
     'rest_framework_api_key',
+    'users',
     #'snippets.apps.SnippetsConfig',
 ]
 
@@ -130,7 +131,7 @@ REST_FRAMEWORK = {
     )
 }
 
-#AUTH_USER_MODEL = 'User'
+#AUTH_USER_MODEL = 'api.CUser'
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/

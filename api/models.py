@@ -12,12 +12,28 @@ from pygments.styles import get_all_styles
 from django.contrib.auth.hashers import *
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
-
+from django.contrib.auth.base_user import BaseUserManager
+from django.utils.translation import ugettext_lazy as _
+#from users.managers import CustomUserManager
 
 LEXERS = [item for item in get_all_lexers() if item[1]]
 LANGUAGE_CHOICES = sorted([(item[1][0],item[0]) for item in LEXERS])
 STYLE_CHOICES = sorted([(item, item) for item in get_all_styles()])
 
+'''
+
+class CUser(AbstractBaseUser, PermissionsMixin):
+    userid = models.AutoField(db_column='CUserID',primary_key=True)
+    username = models.CharField(db_column='CUsername',max_length=40,unique=True)
+    password = models.CharField(db_column='Password', max_length=1000)
+    email = models.EmailField(db_column='Email',max_length=125,unique=True)
+    firstname = models.CharField(db_column='FirstName', max_length=40, blank=True, null=True)
+    lastname = models.CharField(db_column='LastName', max_length=40, blank=True, null=True)
+
+    USERNAME_FIELD = 'username'
+    objects = CustomUserManager()
+
+'''
 
 class User(models.Model):
     userid = models.AutoField(db_column='UserId', primary_key=True)  # Field name made lowercase.
@@ -25,6 +41,7 @@ class User(models.Model):
     password = models.CharField(db_column='Password', max_length=1000)  # Field name made lowercase.
     firstname = models.CharField(db_column='FirstName', max_length=40, blank=True, null=True)  # Field name made lowercase.
     lastname = models.CharField(db_column='LastName', max_length=40, blank=True, null=True)  # Field name made lowercase.
+
 
     def __str__(self):
         return self.loginname

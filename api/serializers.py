@@ -2,6 +2,7 @@ from rest_framework import serializers
 from api.models import *
 import bcrypt
 
+
 class AreatypecodeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Areatypecode

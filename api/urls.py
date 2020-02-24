@@ -13,8 +13,10 @@ from django.views.generic import TemplateView
 urlpatterns = [
     #path('', include(router.urls)),
     #path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+
     path('api/users/',views.user_list),
     path('api/users/<int:pk>/',views.user_detail),
+    #lists
     path('api/actualtotalloads/',views.actualtotalload_list),
     path('api/aggregatedgenerationpertypes/',views.aggregatedgenerationpertype_list),
 
@@ -45,5 +47,6 @@ urlpatterns = [
     path('api/Login/',  TemplateView.as_view(template_name = 'registration/login.html'),name="login"),
     #path('api/Login/',auth_views.logout, name='logout'),
     path('api/Login/',admin.site.urls),
-    path('urlencoded',views.Login.as_view())
+    path('urlencoded',views.Login.as_view()),
+    path('api/Logout', views.Logout.as_view(),name='logout')
 ]
