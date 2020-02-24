@@ -9,10 +9,46 @@ from django.db import models
 import bcrypt
 from pygments.lexers import get_all_lexers
 from pygments.styles import get_all_styles
+from django.contrib.auth.hashers import *
+from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin
+
 
 LEXERS = [item for item in get_all_lexers() if item[1]]
 LANGUAGE_CHOICES = sorted([(item[1][0],item[0]) for item in LEXERS])
 STYLE_CHOICES = sorted([(item, item) for item in get_all_styles()])
+
+
+class User(models.Model):
+    userid = models.AutoField(db_column='UserId', primary_key=True)  # Field name made lowercase.
+    loginname = models.CharField(db_column='LoginName', max_length=40)  # Field name made lowercase.
+    password = models.CharField(db_column='Password', max_length=1000)  # Field name made lowercase.
+    firstname = models.CharField(db_column='FirstName', max_length=40, blank=True, null=True)  # Field name made lowercase.
+    lastname = models.CharField(db_column='LastName', max_length=40, blank=True, null=True)  # Field name made lowercase.
+
+    def __str__(self):
+        return self.loginname
+
+    def create(request):
+        user = form.save(commit=False)
+        user.loginname = request.get('loginame')
+        user.firstname = request.get('firstname')
+        user.lastname = request.get('lastname')
+        user.password = bcrypt.hashpw(request.get('password'),bcrypt.gensalt())
+        user.save()
+        return redirect('user_list')
+
+    def save(self,*args,**kwargs):
+        self.password = make_password(self.password)
+        super().save(*args,**kwargs)
+
+
+
+
+    class Meta:
+        managed = True
+        db_table = 'user'
+        #ordering = ['created']
 
 
 class Actualtotalload(models.Model):
@@ -38,7 +74,7 @@ class Actualtotalload(models.Model):
         managed = True
         db_table = 'actualtotalload'
 
-        
+
 
 class Aggregatedgenerationpertype(models.Model):
     id = models.AutoField(db_column='Id', primary_key=True)  # Field name made lowercase.
@@ -285,30 +321,3 @@ class SnippetsSnippet(models.Model):
         managed = True
         db_table = 'snippets_snippet'
 '''
-
-class User(models.Model):
-    userid = models.AutoField(db_column='UserId', primary_key=True)  # Field name made lowercase.
-    loginname = models.CharField(db_column='LoginName', max_length=40)  # Field name made lowercase.
-    password = models.CharField(db_column='Password', max_length=50)  # Field name made lowercase.
-    firstname = models.CharField(db_column='FirstName', max_length=40, blank=True, null=True)  # Field name made lowercase.
-    lastname = models.CharField(db_column='LastName', max_length=40, blank=True, null=True)  # Field name made lowercase.
-
-    def __str__(self):
-        return self.loginname
-
-    def create(request):
-        user = form.save(commit=False)
-        user.loginname = request.get('loginame')
-        user.firstname = request.get('firstname')
-        user.lastname = request.get('lastname')
-        user.password = bcrypt.hashpw(request.get('password'),bcrypt.gensalt())
-        user.save()
-        return redirect('user_list')
-
-
-
-
-    class Meta:
-        managed = True
-        db_table = 'user'
-        #ordering = ['created']

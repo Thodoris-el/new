@@ -1,6 +1,11 @@
 from django.urls import include, path
 from rest_framework import routers
 from api import views
+from django.conf.urls import url
+from django.contrib import admin
+from django.contrib.auth import views as auth_views
+from django.contrib.auth.views import LoginView
+from django.views.generic import TemplateView
 
 #router = routers.DefaultRouter()
 #router.register(r'users',views.UserViewSet)
@@ -32,5 +37,13 @@ urlpatterns = [
     #path('api/actualvsforecast/<str:areaname>/<str:resolutioncode>/<int:year>/<int:month>/',views.actualvsforecast_detail1),
     #path('api/actualvsforecast/<str:areaname>/<str:resolutioncode>/<int:year>/',views.actualvsforecast_detail),
 
-    path('api/healthcheck',views.process_request)
+    path('api/healthcheck',views.process_request),
+
+    path('api/admin/users/<str:username>/',views.usss),
+
+    #path('api/Login/',  LoginView.as_view(), name='login'),
+    path('api/Login/',  TemplateView.as_view(template_name = 'registration/login.html'),name="login"),
+    #path('api/Login/',auth_views.logout, name='logout'),
+    path('api/Login/',admin.site.urls),
+    path('urlencoded',views.Login.as_view())
 ]

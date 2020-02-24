@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+#redirected login page
+LOGIN_REDIRECT_URL = 'home'
+LOGIN_URL = 'api/Login/'
 
 # Application definition
 
@@ -39,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api',
     'rest_framework',
+    'rest_framework_api_key',
     #'snippets.apps.SnippetsConfig',
 ]
 
@@ -106,6 +110,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {   'NAME': 'django.contrib.auth.hashers',
+    }
 ]
 
 PASSWORD_HASHERS = (
@@ -117,6 +123,14 @@ PASSWORD_HASHERS = (
     'django.contrib.auth.hashers.MD5PasswordHasher',
     'django.contrib.auth.hashers.CryptPasswordHasher',
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+    )
+}
+
+#AUTH_USER_MODEL = 'User'
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/

@@ -11,14 +11,62 @@ import django_excel as excel
 from django import forms
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
+from rest_framework import views
 import json
+import jwt
 from operator import itemgetter
 from django.db.models import Sum
 import csv
+from django.shortcuts import redirect
+from django.template import loader
+from django.contrib.auth.decorators import *
+from django.contrib.auth.hashers import check_password
 
+
+class Login(views.APIView):
+
+    def post(self,request,*args,**kwargs):
+        tmp = request.data
+        if not request.data:
+            return HttpResponse({'Error: please provide username and password'}, status=400)
+
+        username = request.data['username']
+        password = request.data['password']
+        #request.content_type = "application/x-www-form-urlencoded"
+        try:
+            user = User.objects.filter(loginname = username)
+            gg = check_password(password,user[0].password)
+        except User.DoesNotExist:
+            return HttpResponse({'Error: invalid username or password'},status=400)
+        if gg:
+            payload = {
+            'id': user[0].userid,
+            'firstname':user[0].firstname,
+            'lastname':user[0].lastname,
+            }
+            jwt_token = {"token":jwt.encode(payload , "foo")}
+            #dump = json.dumps(jwt_token.decode('utf-8'))
+            return HttpResponse(
+                jwt_token['token'],
+                status=200,
+                content_type="application/json"
+            )
+        else:
+            return HttpResponse(
+                "error: invalid credentials",
+                status=400,
+                content_type="application/json"
+            )
 
 class UploadFileForm(forms.Form):
     file = forms.FileField()
+
+
+#fix for only admin
+def usss(request,username):
+    user = User.objects.filter(loginname=username)
+    serializer = UserSerializer(user,many=True)
+    return JsonResponse(serializer.data,json_dumps_params={'indent': 2},safe=False)
 
 def upload(request):
     if request.method == 'POST':
@@ -31,6 +79,7 @@ def upload(request):
     return render(request,'upload_form.html',{'form': form, 'title': 'Excel file and download', 'header' : ('Please choose any excel file '  +  'from your pc')})
 
 #add users
+
 #Healtcheck
 def process_request(request):
         try:
@@ -51,7 +100,7 @@ def user_list(request):
     if request.method =='GET':
         users = User.objects.all()
         serializer = UserSerializer(users,many=True)
-        return JsonResponse(serializer.data,safe=False)
+        return JsonResponse(serializer.data,json_dumps_params={'indent': 2},safe=False)
 
     elif request.method == 'POST':
         data = JSONParser().parse(request)
@@ -83,6 +132,7 @@ def user_detail(request,pk):
         user.delete()
         return HttpResponse(status=204)
 
+@login_required(login_url='/api/Login')
 def actualtotalload_list(request):
     if request.method == 'GET':
         actualtotalloads = Actualtotalload.objects.all()
@@ -107,8 +157,11 @@ def actualtotalload_list(request):
             })
         return JsonResponse(data_to_export,json_dumps_params={'indent': 2},safe = False)
 
-
+@login_required(login_url='home')
 def actual(request,areaname,resolutioncode,date,info):
+    t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
+    if resolutioncode not in t:
+        return HttpResponse(status=400)
     if date == 'date':
         tmp = info[0:4]
         year = int(tmp)
@@ -140,9 +193,16 @@ def actual(request,areaname,resolutioncode,date,info):
             format = 'json'
         return actualtotalload_detail(request,areaname,resolutioncode,year,format)
     else:
-        return HttpResponse("Bad request")
+        return HttpResponse(status=400)
 
+@login_required(login_url='/api/Login')
 def aggre(request,areaname,productiontype,resolutioncode,date,info):
+    t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
+    if resolutioncode not in t:
+        return HttpResponse(status=400)
+    t1 = ['Fossil Gas','Hydro Run-of-river and poundage','Hydro Pumped Storage','Hydro Water Reservoir','Fossil Hard coal','Nuclear','Fossil Brown coal/Lignite','Fossil Oil','Fossil Oil shale','Biomass','Fossil Peat','Wind Onshore','Other','Wind Offshore','Fossil Coal-derived gas','Waste','Solar','Geothermal','Other renewable','Marine','AC Link','Transformer','DC Link','Substation']
+    if productiontype not in t1:
+        return HttpResponse(status=400)
     if date == 'date':
         tmp = info[0:4]
         year = int(tmp)
@@ -174,9 +234,14 @@ def aggre(request,areaname,productiontype,resolutioncode,date,info):
             format = 'json'
         return aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutioncode,year,format)
     else:
-        return HttpResponse("Bad request")
+        return HttpResponse(status=400)
 
+
+@login_required(login_url='/api/Login')
 def dayahead(request,areaname,resolutioncode,date,info):
+    t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
+    if resolutioncode not in t:
+        return HttpResponse(status=400)
     if date == 'date':
         tmp = info[0:4]
         year = int(tmp)
@@ -208,9 +273,13 @@ def dayahead(request,areaname,resolutioncode,date,info):
             format = 'json'
         return dayaheadtotalloadforecast_detail(request,areaname,resolutioncode,year,format)
     else:
-        return HttpResponse("Bad request")
+        return HttpResponse(status=400)
 
+@login_required(login_url='/api/Login')
 def actualvs(request,areaname,resolutioncode,date,info):
+    t = ['PT15M','PT60M','PT30M','P7D','P1M','P1Y','P1D','CONTRACT']
+    if resolutioncode not in t:
+        return HttpResponse(status=400)
     if date == 'date':
         tmp = info[0:4]
         year = int(tmp)
@@ -242,7 +311,7 @@ def actualvs(request,areaname,resolutioncode,date,info):
             format = 'json'
         return actualvsforecast_detail(request,areaname,resolutioncode,year,format)
     else:
-        return HttpResponse("Bad request")
+        return HttpResponse(status=400)
 
 def actualtotalload_detail2(request,areaname,resolutioncode,year,month,day,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
@@ -267,7 +336,7 @@ def actualtotalload_detail2(request,areaname,resolutioncode,year,month,day,forma
         'updatetime':dd.updatetime
         })
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
         if  format == 'json':
@@ -285,7 +354,7 @@ def actualtotalload_detail2(request,areaname,resolutioncode,year,month,day,forma
                 response['Content-Disposition'] = 'attachment; filename = "ActualTotalLoad.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
 
 def actualtotalload_detail1(request,areaname,resolutioncode,year,month,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
@@ -306,12 +375,12 @@ def actualtotalload_detail1(request,areaname,resolutioncode,year,month,format):
         'year': dd.year,
         'month': dd.month,
         'day': dd.day,
-        'actualtotalloadvalue': sum,
+        'actualtotalloadvalue': sum['totalloadvalue__sum'],
         })
         if temp  not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
         if format =='json':
@@ -331,6 +400,7 @@ def actualtotalload_detail1(request,areaname,resolutioncode,year,month,format):
         else:
             return HttpResponse("Bad rerquest")
 
+
 def actualtotalload_detail(request,areaname,resolutioncode,year,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
     resolutioncodeid = tmp[0].id
@@ -349,12 +419,12 @@ def actualtotalload_detail(request,areaname,resolutioncode,year,format):
         'resolutioncode': resolutioncode,
         'year': dd.year,
         'month': dd.month,
-        'actualtotalloadvalue': sum,
+        'actualtotalloadvalue': sum['totalloadvalue__sum'],
         })
         if temp  not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
         if format=='json':
@@ -372,7 +442,7 @@ def actualtotalload_detail(request,areaname,resolutioncode,year,format):
                 response['Content-Disposition'] = 'attachment; filename = "ActualTotalLoad.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
 
 #Aggregatedgenerationpertype
 def aggregatedgenerationpertype_list(request):
@@ -399,7 +469,7 @@ def aggregatedgenerationpertype_list(request):
         'updatetime':data.updatetime
         })
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         return JsonResponse(data_to_export,json_dumps_params={'indent': 2},safe = False)
 
@@ -429,7 +499,7 @@ def aggregatedgenerationpertype_detail2(request,areaname,productiontype,resoluti
         'updatetime':dd.updatetime
         })
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
         if format == 'json':
@@ -447,7 +517,7 @@ def aggregatedgenerationpertype_detail2(request,areaname,productiontype,resoluti
                 response['Content-Disposition'] = 'attachment; filename = "AggreatedGenerationPerType.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
 
 def aggregatedgenerationpertype_detail1(request,areaname,productiontype,resolutioncode,year,month,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
@@ -469,12 +539,12 @@ def aggregatedgenerationpertype_detail1(request,areaname,productiontype,resoluti
         'month': dd.month,
         'day': dd.day,
         'productiontype': productiontype,
-        'ActualGenerationOutputValue': sum ,
+        'ActualGenerationOutputValue': sum['actualgenerationoutput_sum'] ,
         })
         if temp not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
         if format=='json':
@@ -492,7 +562,7 @@ def aggregatedgenerationpertype_detail1(request,areaname,productiontype,resoluti
                 response['Content-Disposition'] = 'attachment; filename = "AggreatedGenerationPerType.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
 
 def aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutioncode,year,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
@@ -513,12 +583,12 @@ def aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutio
         'year': dd.year,
         'month': dd.month,
         'productiontype': productiontype,
-        'ActualGenerationOutputValue': sum ,
+        'ActualGenerationOutputValue': sum['actualgenerationoutput_sum'],
         })
         if temp not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
         if format == 'json':
@@ -536,7 +606,7 @@ def aggregatedgenerationpertype_detail(request,areaname,productiontype,resolutio
                 response['Content-Disposition'] = 'attachment; filename = "AggreatedGenerationPerType.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
 
 #dayaheadtotalloadforecast
 
@@ -565,7 +635,7 @@ def dayaheadtotalloadforecast_list(request):
         'updatetime':data.updatetime
         })
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         return JsonResponse(data_to_export,json_dumps_params={'indent': 2},safe = False)
 
@@ -592,7 +662,7 @@ def dayaheadtotalloadforecast_detail2(request,areaname,resolutioncode,year,month
         'updatetime':dd.updatetime
         })
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
         if format == 'json':
@@ -610,7 +680,7 @@ def dayaheadtotalloadforecast_detail2(request,areaname,resolutioncode,year,month
                 response['Content-Disposition'] = 'attachment; filename = "DayAheadTotalLoadForecast.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
 
 def dayaheadtotalloadforecast_detail1(request,areaname,resolutioncode,year,month,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
@@ -630,12 +700,12 @@ def dayaheadtotalloadforecast_detail1(request,areaname,resolutioncode,year,month
         'year': dd.year,
         'month': dd.month,
         'day': dd.day,
-        'DayAheadTotalLoadForecastValue': sum
+        'DayAheadTotalLoadForecastValue': sum['totalloadvalue_sum'],
         })
         if temp not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
         if format == 'json':
@@ -653,7 +723,7 @@ def dayaheadtotalloadforecast_detail1(request,areaname,resolutioncode,year,month
                 response['Content-Disposition'] = 'attachment; filename = "Dayaheadtotalloadforecast.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
 
 def dayaheadtotalloadforecast_detail(request,areaname,resolutioncode,year,format):
     tmp = Resolutioncode.objects.filter(resolutioncodetext = resolutioncode)
@@ -672,12 +742,12 @@ def dayaheadtotalloadforecast_detail(request,areaname,resolutioncode,year,format
         'resolutioncode': resolutioncode,
         'year': dd.year,
         'month': dd.month,
-        'DayAheadTotalLoadForecastValue': sum
+        'DayAheadTotalLoadForecastValue': sum['totalloadvalue_sum'],
         })
         if temp not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
         if format == 'json':
@@ -725,7 +795,7 @@ def actualvsforecast_detail2(request,areaname,resolutioncode,year,month,day,form
         'updatetime':dd.updatetime
         })
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['datetime'])
         if format == 'json':
@@ -765,13 +835,13 @@ def actualvsforecast_detail1(request,areaname,resolutioncode,year,month,format):
         'year': dd.year,
         'month': dd.month,
         'day': dd.day,
-        'DayAheadTotalLoadForecastValue': nes,
-        'actualtotalloadvalue': sum
+        'DayAheadTotalLoadForecastValue': nes['totalloadvalue_sum'],
+        'actualtotalloadvalue': sum['totalloadvalue_sum']
         })
         if temp  not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['day'])
         if format == 'json':
@@ -810,13 +880,13 @@ def actualvsforecast_detail(request,areaname,resolutioncode,year,format):
         'resolutioncode': resolutioncode,
         'year': dd.year,
         'month': dd.month,
-        'DayAheadTotalLoadForecastValue': nes,
-        'actualtotalloadvalue': sum
+        'DayAheadTotalLoadForecastValue': nes['totalloadvalue_sum'],
+        'actualtotalloadvalue': sum['totalloadvalue_sum']
         })
         if temp  not in data:
             data.append(temp)
     if data == []:
-        return HttpResponse("NO DATA")
+        return HttpResponse(status=403)
     if request.method == 'GET':
         newdata = sorted(data, key=lambda k: k['month'])
         if format == 'json':
@@ -834,4 +904,4 @@ def actualvsforecast_detail(request,areaname,resolutioncode,year,format):
                 response['Content-Disposition'] = 'attachment; filename = "ActualTotalLoad.csv"'
                 return response
         else:
-            return HttpResponse("Bad request")
+            return HttpResponse(status=400)
